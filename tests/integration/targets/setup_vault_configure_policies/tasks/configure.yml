@@ -1,0 +1,45 @@
+---
+- name: Create a test read only policy
+  vault_ci_policy_put:
+    name: test-policy-reader-policy
+    policy: |-
+      path "sys/policies/*" {
+        capabilities = ["list", "read"]
+      }
+
+- name: Create a test read-write policy
+  vault_ci_policy_put:
+    name: test-policy-read-write-policy
+    policy: |-
+      path "sys/policies/*" {
+        capabilities = ["list", "read", "create", "update", "patch"]
+      }
+
+- name: Create a test admin policy
+  vault_ci_policy_put:
+    name: test-policy-admin-policy
+    policy: |-
+      path "sys/policies/*" {
+        capabilities = ["list", "read", "create", "update", "patch", "delete"]
+      }
+
+- name: Create a test non-root token
+  vault_ci_token_create:
+    policies: test-policy-reader-policy
+  register: user_token_cmd
+
+- name: Create a test non-root token
+  vault_ci_token_create:
+    policies: test-policy-read-write-policy
+  register: user_token_cmd
+
+- name: Create a test non-root token
+  vault_ci_token_create:
+    policies: test-policy-admin-policy
+  register: user_token_cmd
+
+- name: 'Write Canary'
+  vault_ci_write:
+    path: '{{ vault_configure_policies_canary.path }}'
+    data:
+      value: '{{ vault_configure_policies_canary.value }}'

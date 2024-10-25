@@ -1,0 +1,76 @@
+---
+- name: Var block
+  vars:
+    user_token: '{{ user_token_cmd.result.auth.client_token }}'
+    user_token_read: '{{ user_token_policy_read.result.auth.client_token }}'
+  module_defaults:
+    community.hashi_vault.vault_policy_list:
+      url: '{{ vault_test_server_http }}'
+      auth_method: token
+      token: '{{ user_token_read }}'
+      token_validate: true
+      timeout: 5
+  block:
+    - name: 'Check if acl policies can be retrieved'
+      register: policy_list
+      community.hashi_vault.vault_policy_list:
+        type: acl
+
+    - assert:
+        that:
+          - "'data' in policy_list"
+          - "'data' in policy_list['data']"
+          - "'policies' in policy_list['data']"
+        fail_msg: 'Return value did not contain expected fields.'
+
+    - name: 'Check if rgp policies can be retrieved'
+      register: policy_list
+      community.hashi_vault.vault_policy_list:
+        type: rgp
+
+    - assert:
+        that:
+          - "'data' in policy_list"
+          - "'data' in policy_list['data']"
+          - "'policies' in policy_list['data']"
+        fail_msg: 'Return value did not contain expected fields.'
+
+    - name: 'Check if egp policies can be retrieved'
+      register: policy_list
+      community.hashi_vault.vault_policy_list:
+        type: egp
+
+    - assert:
+        that:
+          - "'data' in policy_list"
+          - "'data' in policy_list['data']"
+          - "'policies' in policy_list['data']"
+        fail_msg: 'Return value did not contain expected fields.'
+
+    ### failure tests
+
+    - name: 'Failure expected when erroneous credentials are used'
+      register: test_wrong_cred
+      community.hashi_vault.vault_policy_list:
+        type: acl
+        token: wrong_token
+      ignore_errors: true
+
+    - assert:
+        that:
+          - test_wrong_cred is failed
+          - test_wrong_cred.msg is search('Invalid Vault Token')
+        fail_msg: "Expected failure but got success or wrong failure message."
+
+    - name: 'Failure expected when unauthorized path is listed'
+      register: test_unauthorized
+      community.hashi_vault.vault_policy_list:
+        type: acl
+        token: '{{ user_token }}'
+      ignore_errors: true
+
+    - assert:
+        that:
+          - test_unauthorized is failed
+          - test_unauthorized.msg is search('Permission Denied')
+        fail_msg: "Expected failure but got success or wrong failure message."

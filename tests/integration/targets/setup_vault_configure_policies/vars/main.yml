@@ -1,0 +1,4 @@
+---
+vault_configure_policies_canary:
+  path: cubbyhole/configure_policies
+  value: complete  # value does not matter
