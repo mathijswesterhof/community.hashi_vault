@@ -117,9 +117,14 @@ def run_module():
         raw = client.list(path)
     except hvac_exceptions.Forbidden as e:
         module.fail_json(msg="Forbidden: Permission Denied to path ['%s']." % path, exception=traceback.format_exc())
+    except hvac_exceptions.InvalidPath as e:
+        # vault returns 404 if enterprise path is accessed by non-enterprice instance
+        module.fail_json(msg="Path not found: this probably is a non-enterprice instance", exception=traceback.format_exc())
+    except hvac_exceptions.VaultError as e:
+        module.fail_json(msg="something went wrong, please report this to the devs | %s" % str(e), exception=traceback.format_exc())
 
-    data = raw['data']
-    policies = data['keys']
+    data = raw['data'] if 'data' in raw else {}
+    policies = data['keys'] if 'keys' in data else {}
     module.exit_json(raw=raw, data=data, policies=policies)
 
 
